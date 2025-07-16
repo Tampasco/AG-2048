@@ -60,7 +60,7 @@ class GameGrid(Frame):
                     master=cell,
                     text="",
                     bg=c.BACKGROUND_COLOR_CELL_EMPTY,
-                    ...justify=CENTER,
+                    justify=CENTER,
                     font=c.FONT,
                     width=5,
                     height=2)
