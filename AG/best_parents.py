@@ -22,7 +22,7 @@ def avaliar_populacao(populacao: list[list[str]], num_simulacoes: int) -> list[t
     return populacao_avaliada
 
 def selecionar_pais(populacao_com_fitness: list[tuple[float, list[str]]], n: int) -> list[list[str]]:
-    #Resolvi usar a estratégia do Elitismo.
+    # Resolvi usar a estratégia do Elitismo.
     populacao_com_fitness.sort(key=lambda item: item[0], reverse=True)
     n_melhores = populacao_com_fitness[:n]
     # Extrai apenas a parte do indivíduo (item[1] da tupla) para criar a lista de pais
