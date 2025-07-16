@@ -5,7 +5,7 @@ O projeto é uma atividade acadêmica da UFCG, sem fins lucrativos e apenas para
 
 # Contributors:
 
- - Francisco Pereira
+ - [Francisco Pereira](github.com/Francisco-xiq)
  - [Cristian Alves](github.com/crissalves)
  - [Lucas Oliveira](github.com/Tampasco)
  - [Geraldo de Lima Junior](github.com/jlacerd4)
