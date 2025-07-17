@@ -101,153 +101,51 @@ def gerar_nova_populacao(populacao_com_fitness: list[tuple[float, list[str]]], t
     return nova_populacao
 
 
-def rodar_ag(populacoes: int, tamanho_pop: int, tamanho_individuo: int, taxa_mutacao: float, num_simulacoes: int) -> tuple[float, list[str]]:
-    # Validação de parâmetros
-    if populacoes <= 0 or tamanho_pop <= 0 or tamanho_individuo <= 0:
-        raise ValueError("Parâmetros devem ser positivos")
-    if not 0 <= taxa_mutacao <= 1:
-        raise ValueError("Taxa de mutação deve estar entre 0 e 1")
-    if num_simulacoes <= 0:
-        raise ValueError("Número de simulações deve ser positivo")
+def calcular_metricas(fitness_geral: list[float]):
+    melhor_fitness = max(fitness_geral)
+    pior_fitness = min(fitness_geral)
+    medio_fitness = statistics.mean(fitness_geral)
+    desvio_padrao = statistics.stdev(fitness_geral) if len(fitness_geral) > 1 else 0
+    mediana = statistics.median(fitness_geral)
     
-    # Configuração inicial
-    num_pais = max(2, tamanho_pop // 2)  # Número de pais para seleção
+    metricas = {
+        "melhor_fitness": melhor_fitness,
+        "pior_fitness": pior_fitness,
+        "medio_fitness": medio_fitness,
+        "desvio_padrao": desvio_padrao,
+        "mediana": mediana
+    }
+    
+    return metricas
+
+
+def rodar_ag(populacoes: int, tamanho_pop: int, tamanho_individuo: int, taxa_mutacao: float, num_simulacoes: int) -> tuple[float, list[str]]:
+    # Configurando parametros
+    num_pais = max(2, tamanho_pop // 2)
     tempo_inicio = time.time()
     melhor_fitness_historico = []
     melhor_individuo_global = None
     melhor_fitness_global = float('-inf')
-    
-    # 1. INICIALIZAÇÃO - Gerar população inicial
+
+    # Criando populacao original
     populacao = generate_population(tamanho_pop, tamanho_individuo)
-    
-    # Arquivo CSV para registrar métricas
-    with open('ga_metricas.csv', 'w', newline='', encoding='utf-8') as arquivo_csv:
-        escritor = csv.writer(arquivo_csv)
+    ciclos = 0
+
+    # Ciclo evolutivo
+    while ciclos < populacoes:
+
+        # Avaliando populacao atual
+        populacao_avaliada = avaliar_populacao(populacao, num_simulacoes)
+
+        # Calcular metricas
+        fitness_geral = [fitness_val for fitness_val, _ in populacao_avaliada]
+        calcular_metricas(fitness_geral)
         
-        # Cabeçalho do CSV
-        escritor.writerow([
-            'populacao', 'Melhor_Fitness', 'Fitness_Medio', 'Pior_Fitness', 
-            'Desvio_Padrao', 'Mediana', 'Quartil_Q1', 'Quartil_Q3',
-            'Diversidade_Genetica', 'Taxa_Convergencia', 'Tempo_populacao_s',
-            'Tempo_Acumulado_s', 'Operacoes_Fitness', 'Complexidade_O_n'
-        ])
+        # Evoluir populacao
+        if ciclos < populacoes - 1:
+            nova_populacao = gerar_nova_populacao(populacao_avaliada, tamanho_pop, taxa_mutacao, num_pais)
+            populacao = nova_populacao
         
-        # CICLO PRINCIPAL DO ALGORITMO GENÉTICO
-        for populacao in range(populacoes):
-            tempo_populacao_inicio = time.time()
-            
-            # 2. AVALIAÇÃO - Calcular fitness de toda a população
-            populacao_avaliada = avaliar_populacao(populacao, num_simulacoes)
-            
-            # 3. EXTRAÇÃO DE MÉTRICAS ESTATÍSTICAS
-            fitness_values = [fitness_val for fitness_val, _ in populacao_avaliada]
-            
-            melhor_fitness = max(fitness_values)
-            fitness_medio = statistics.mean(fitness_values)
-            pior_fitness = min(fitness_values)
-            desvio_padrao = statistics.stdev(fitness_values) if len(fitness_values) > 1 else 0
-            mediana = statistics.median(fitness_values)
-            
-            # Quartis
-            fitness_sorted = sorted(fitness_values)
-            n = len(fitness_sorted)
-            q1 = fitness_sorted[n//4] if n > 3 else fitness_sorted[0]
-            q3 = fitness_sorted[3*n//4] if n > 3 else fitness_sorted[-1]
-            
-            # 4. ATUALIZAÇÃO DO MELHOR GLOBAL
-            if melhor_fitness > melhor_fitness_global:
-                melhor_fitness_global = melhor_fitness
-                melhor_individuo_global = max(populacao_avaliada, key=lambda x: x[0])[1].copy()
-            
-            # 5. CÁLCULO DE MÉTRICAS AVANÇADAS
-            # Diversidade genética (coeficiente de variação)
-            diversidade_genetica = desvio_padrao / fitness_medio if fitness_medio > 0 else 0
-            
-            # Taxa de convergência (melhoria relativa)
-            melhor_fitness_historico.append(melhor_fitness)
-            if populacao > 0:
-                fitness_anterior = melhor_fitness_historico[populacao-1]
-                taxa_convergencia = (melhor_fitness - fitness_anterior) / fitness_anterior if fitness_anterior > 0 else 0
-            else:
-                taxa_convergencia = 0
-            
-            # 6. MÉTRICAS DE TEMPO E COMPLEXIDADE
-            tempo_populacao_fim = time.time()
-            tempo_populacao = tempo_populacao_fim - tempo_populacao_inicio
-            tempo_acumulado = tempo_populacao_fim - tempo_inicio
-            operacoes_fitness = tamanho_pop * num_simulacoes
-            
-            # 7. REGISTRO DE MÉTRICAS NO CSV
-            escritor.writerow([
-                populacao + 1, round(melhor_fitness, 4), round(fitness_medio, 4), 
-                round(pior_fitness, 4), round(desvio_padrao, 4), round(mediana, 4),
-                round(q1, 4), round(q3, 4), round(diversidade_genetica, 4),
-                round(taxa_convergencia, 6), round(tempo_populacao, 4),
-                round(tempo_acumulado, 4), operacoes_fitness, tamanho_pop
-            ])
-            
-            # 8. SELEÇÃO, CRUZAMENTO E MUTAÇÃO - Gerar próxima geração
-            if populacao < populacoes - 1:  # Não gerar nova população na última geração
-                try:
-                    populacao = gerar_nova_populacao(
-                        populacao_avaliada, 
-                        tamanho_pop, 
-                        taxa_mutacao, 
-                        num_pais
-                    )
-                except Exception as e:
-                    # Em caso de erro, manter população atual e continuar
-                    print(f"Aviso: Erro na geração {populacao + 1}: {e}")
-                    break
-    
-    # 10. GERAÇÃO DO RELATÓRIO FINAL
-    tempo_total = time.time() - tempo_inicio
-    
-    with open('ga_relatorio.txt', 'w', encoding='utf-8') as relatorio:
-        relatorio.write("RELATÓRIO DE DESEMPENHO - ALGORITMO GENÉTICO\n")
-        relatorio.write("=" * 50 + "\n\n")
-        
-        relatorio.write("PARÂMETROS DE EXECUÇÃO:\n")
-        relatorio.write(f"- Gerações executadas: {len(melhor_fitness_historico)}/{populacoes}\n")
-        relatorio.write(f"- Tamanho da população: {tamanho_pop}\n")
-        relatorio.write(f"- Tamanho do indivíduo: {tamanho_individuo}\n")
-        relatorio.write(f"- Taxa de mutação: {taxa_mutacao}\n")
-        relatorio.write(f"- Número de simulações por fitness: {num_simulacoes}\n")
-        relatorio.write(f"- Número de pais selecionados: {num_pais}\n\n")
-        
-        relatorio.write("ANÁLISE DE COMPLEXIDADE:\n")
-        relatorio.write(f"- Complexidade temporal: O(G × P × S × I)\n")
-        relatorio.write(f"  onde G={len(melhor_fitness_historico)}, P={tamanho_pop}, S={num_simulacoes}, I={tamanho_individuo}\n")
-        relatorio.write(f"- Complexidade espacial: O(P × I) = O({tamanho_pop} × {tamanho_individuo})\n")
-        relatorio.write(f"- Operações totais de fitness: {len(melhor_fitness_historico) * tamanho_pop * num_simulacoes:,}\n\n")
-        
-        relatorio.write("MÉTRICAS DE TEMPO:\n")
-        relatorio.write(f"- Tempo total de execução: {tempo_total:.4f} segundos\n")
-        
-        relatorio.write("ANÁLISE DE CONVERGÊNCIA:\n")
-        if len(melhor_fitness_historico) > 1:
-            fitness_inicial = melhor_fitness_historico[0]
-            fitness_final = melhor_fitness_historico[-1]
-            melhoria_total = ((fitness_final - fitness_inicial) / fitness_inicial * 100) if fitness_inicial > 0 else 0
-            
-            relatorio.write(f"- Fitness inicial: {fitness_inicial:.4f}\n")
-            relatorio.write(f"- Fitness final: {fitness_final:.4f}\n")
-            relatorio.write(f"- Melhor fitness global: {melhor_fitness_global:.4f}\n")
-            relatorio.write(f"- Melhoria total: {melhoria_total:.2f}%\n\n")
-            
-            # Intervalos de confiança (95%)
-            if len(melhor_fitness_historico) > 1:
-                media_fitness = statistics.mean(melhor_fitness_historico)
-                desvio_fitness = statistics.stdev(melhor_fitness_historico)
-                margem_erro = 1.96 * (desvio_fitness / (len(melhor_fitness_historico) ** 0.5))
-                relatorio.write("INTERVALOS DE CONFIANÇA (95%):\n")
-                relatorio.write(f"- Fitness médio: {media_fitness:.4f} ± {margem_erro:.4f}\n")
-                relatorio.write(f"- Intervalo: [{media_fitness - margem_erro:.4f}, {media_fitness + margem_erro:.4f}]\n\n")
-        
-        relatorio.write("RESULTADO FINAL:\n")
-        relatorio.write(f"- Melhor fitness alcançado: {melhor_fitness_global:.4f}\n")
-        relatorio.write(f"- Sequência de movimentos (primeiros 20): {melhor_individuo_global[:20] if melhor_individuo_global else 'N/A'}\n")
-        relatorio.write(f"- Arquivo de métricas: ga_metricas.csv\n")
-    
-    # 11. RETORNO DO RESULTADO FINAL
+        ciclos += 1
+
     return melhor_fitness_global, melhor_individuo_global if melhor_individuo_global else []
