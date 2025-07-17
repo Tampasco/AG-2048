@@ -66,3 +66,33 @@ def mutar(individuo: list[str], taxa_mutacao: float) -> list[str]:
             mutante[i] = random.choice(valid_moves)
     
     return mutante
+
+
+def gerar_nova_geracao(populacao_com_fitness: list[tuple[float, list[str]]], tamanho_pop: int, taxa_mutacao: float, num_pais: int) -> list[list[str]]:
+    pais = selecionar_pais(populacao_com_fitness, num_pais)
+    
+    nova_geracao = []
+    
+    # Manter os melhores pais na nova geração (elitismo)
+    nova_geracao.extend(pais)
+    
+    # Gerar filhos através de cruzamento até atingir o tamanho desejado da população
+    while len(nova_geracao) < tamanho_pop:
+        # Selecionar dois pais aleatoriamente
+        pai1 = random.choice(pais)
+        pai2 = random.choice(pais)
+        
+        # Realizar cruzamento
+        filho1, filho2 = cruzar(pai1, pai2)
+        
+        # Aplicar mutação nos filhos
+        filho1_mutado = mutar(filho1, taxa_mutacao)
+        filho2_mutado = mutar(filho2, taxa_mutacao)
+        
+        # Adicionar filhos à nova geração
+        if len(nova_geracao) < tamanho_pop:
+            nova_geracao.append(filho1_mutado)
+        if len(nova_geracao) < tamanho_pop:
+            nova_geracao.append(filho2_mutado)
+    
+    return nova_geracao
