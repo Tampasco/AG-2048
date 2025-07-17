@@ -71,16 +71,16 @@ def mutar(individuo: list[str], taxa_mutacao: float) -> list[str]:
     return mutante
 
 
-def gerar_nova_geracao(populacao_com_fitness: list[tuple[float, list[str]]], tamanho_pop: int, taxa_mutacao: float, num_pais: int) -> list[list[str]]:
+def gerar_nova_populacao(populacao_com_fitness: list[tuple[float, list[str]]], tamanho_pop: int, taxa_mutacao: float, num_pais: int) -> list[list[str]]:
     pais = selecionar_pais(populacao_com_fitness, num_pais)
     
-    nova_geracao = []
+    nova_populacao = []
     
     # Manter os melhores pais na nova geração (elitismo)
-    nova_geracao.extend(pais)
+    nova_populacao.extend(pais)
     
     # Gerar filhos através de cruzamento até atingir o tamanho desejado da população
-    while len(nova_geracao) < tamanho_pop:
+    while len(nova_populacao) < tamanho_pop:
         # Selecionar dois pais aleatoriamente
         pai1 = random.choice(pais)
         pai2 = random.choice(pais)
@@ -93,17 +93,17 @@ def gerar_nova_geracao(populacao_com_fitness: list[tuple[float, list[str]]], tam
         filho2_mutado = mutar(filho2, taxa_mutacao)
         
         # Adicionar filhos à nova geração
-        if len(nova_geracao) < tamanho_pop:
-            nova_geracao.append(filho1_mutado)
-        if len(nova_geracao) < tamanho_pop:
-            nova_geracao.append(filho2_mutado)
+        if len(nova_populacao) < tamanho_pop:
+            nova_populacao.append(filho1_mutado)
+        if len(nova_populacao) < tamanho_pop:
+            nova_populacao.append(filho2_mutado)
     
-    return nova_geracao
+    return nova_populacao
 
 
-def rodar_ag(geracoes: int, tamanho_pop: int, tamanho_individuo: int, taxa_mutacao: float, num_simulacoes: int) -> tuple[float, list[str]]:
+def rodar_ag(populacoes: int, tamanho_pop: int, tamanho_individuo: int, taxa_mutacao: float, num_simulacoes: int) -> tuple[float, list[str]]:
     # Validação de parâmetros
-    if geracoes <= 0 or tamanho_pop <= 0 or tamanho_individuo <= 0:
+    if populacoes <= 0 or tamanho_pop <= 0 or tamanho_individuo <= 0:
         raise ValueError("Parâmetros devem ser positivos")
     if not 0 <= taxa_mutacao <= 1:
         raise ValueError("Taxa de mutação deve estar entre 0 e 1")
@@ -126,15 +126,15 @@ def rodar_ag(geracoes: int, tamanho_pop: int, tamanho_individuo: int, taxa_mutac
         
         # Cabeçalho do CSV
         escritor.writerow([
-            'Geracao', 'Melhor_Fitness', 'Fitness_Medio', 'Pior_Fitness', 
+            'populacao', 'Melhor_Fitness', 'Fitness_Medio', 'Pior_Fitness', 
             'Desvio_Padrao', 'Mediana', 'Quartil_Q1', 'Quartil_Q3',
-            'Diversidade_Genetica', 'Taxa_Convergencia', 'Tempo_Geracao_s',
+            'Diversidade_Genetica', 'Taxa_Convergencia', 'Tempo_populacao_s',
             'Tempo_Acumulado_s', 'Operacoes_Fitness', 'Complexidade_O_n'
         ])
         
         # CICLO PRINCIPAL DO ALGORITMO GENÉTICO
-        for geracao in range(geracoes):
-            tempo_geracao_inicio = time.time()
+        for populacao in range(populacoes):
+            tempo_populacao_inicio = time.time()
             
             # 2. AVALIAÇÃO - Calcular fitness de toda a população
             populacao_avaliada = avaliar_populacao(populacao, num_simulacoes)
@@ -165,31 +165,31 @@ def rodar_ag(geracoes: int, tamanho_pop: int, tamanho_individuo: int, taxa_mutac
             
             # Taxa de convergência (melhoria relativa)
             melhor_fitness_historico.append(melhor_fitness)
-            if geracao > 0:
-                fitness_anterior = melhor_fitness_historico[geracao-1]
+            if populacao > 0:
+                fitness_anterior = melhor_fitness_historico[populacao-1]
                 taxa_convergencia = (melhor_fitness - fitness_anterior) / fitness_anterior if fitness_anterior > 0 else 0
             else:
                 taxa_convergencia = 0
             
             # 6. MÉTRICAS DE TEMPO E COMPLEXIDADE
-            tempo_geracao_fim = time.time()
-            tempo_geracao = tempo_geracao_fim - tempo_geracao_inicio
-            tempo_acumulado = tempo_geracao_fim - tempo_inicio
+            tempo_populacao_fim = time.time()
+            tempo_populacao = tempo_populacao_fim - tempo_populacao_inicio
+            tempo_acumulado = tempo_populacao_fim - tempo_inicio
             operacoes_fitness = tamanho_pop * num_simulacoes
             
             # 7. REGISTRO DE MÉTRICAS NO CSV
             escritor.writerow([
-                geracao + 1, round(melhor_fitness, 4), round(fitness_medio, 4), 
+                populacao + 1, round(melhor_fitness, 4), round(fitness_medio, 4), 
                 round(pior_fitness, 4), round(desvio_padrao, 4), round(mediana, 4),
                 round(q1, 4), round(q3, 4), round(diversidade_genetica, 4),
-                round(taxa_convergencia, 6), round(tempo_geracao, 4),
+                round(taxa_convergencia, 6), round(tempo_populacao, 4),
                 round(tempo_acumulado, 4), operacoes_fitness, tamanho_pop
             ])
             
             # 8. SELEÇÃO, CRUZAMENTO E MUTAÇÃO - Gerar próxima geração
-            if geracao < geracoes - 1:  # Não gerar nova população na última geração
+            if populacao < populacoes - 1:  # Não gerar nova população na última geração
                 try:
-                    populacao = gerar_nova_geracao(
+                    populacao = gerar_nova_populacao(
                         populacao_avaliada, 
                         tamanho_pop, 
                         taxa_mutacao, 
@@ -197,7 +197,7 @@ def rodar_ag(geracoes: int, tamanho_pop: int, tamanho_individuo: int, taxa_mutac
                     )
                 except Exception as e:
                     # Em caso de erro, manter população atual e continuar
-                    print(f"Aviso: Erro na geração {geracao + 1}: {e}")
+                    print(f"Aviso: Erro na geração {populacao + 1}: {e}")
                     break
     
     # 10. GERAÇÃO DO RELATÓRIO FINAL
@@ -208,7 +208,7 @@ def rodar_ag(geracoes: int, tamanho_pop: int, tamanho_individuo: int, taxa_mutac
         relatorio.write("=" * 50 + "\n\n")
         
         relatorio.write("PARÂMETROS DE EXECUÇÃO:\n")
-        relatorio.write(f"- Gerações executadas: {len(melhor_fitness_historico)}/{geracoes}\n")
+        relatorio.write(f"- Gerações executadas: {len(melhor_fitness_historico)}/{populacoes}\n")
         relatorio.write(f"- Tamanho da população: {tamanho_pop}\n")
         relatorio.write(f"- Tamanho do indivíduo: {tamanho_individuo}\n")
         relatorio.write(f"- Taxa de mutação: {taxa_mutacao}\n")
