@@ -1,12 +1,15 @@
+"""Algoritmo genético para jogar 2048 automaticamente."""
+
 import random
-from mocks import simular_jogo_mock as simular_jogo  # Após a implementação real, importar o módulo correto.
+
+# pylint: disable=import-error
 import logic
 import constants as c
 
 valid_moves = ['up', 'down', 'left', 'right']
 
-
-def simular_jogo(individuo: list[str]) -> tuple[int, int]:
+# Executa uma simulação do jogo com um indivíduo (lista de movimentos).
+def executar_jogo(individuo: list[str]) -> tuple[int, int]:
     movimentos_map = {
         'up': logic.up,
         'down': logic.down,
@@ -31,13 +34,10 @@ def simular_jogo(individuo: list[str]) -> tuple[int, int]:
         if movimento_realizado:
             matriz = logic.add_two(matriz)
             movimentos_validos += 1
-
-            # Atualiza o maior número do jogo
             for linha in matriz:
                 for numero in linha:
                     maior_numero = max(maior_numero, numero)
 
-    # Se não conseguiu fazer nenhum movimento válido, calcula novamente
     if maior_numero == 0:
         for linha in matriz:
             for numero in linha:
@@ -45,29 +45,33 @@ def simular_jogo(individuo: list[str]) -> tuple[int, int]:
 
     return maior_numero, movimentos_validos
 
-
+#Gera uma lista de movimentos aleatórios (indivíduo).
 def generate_individual(size):
+
     return [random.choice(valid_moves) for _ in range(size)]
 
 
 def generate_population(population_size, individual_size):
+    """Gera uma população de indivíduos aleatórios."""
     return [generate_individual(individual_size) for _ in range(population_size)]
 
 
 def fitness(individuo: list[str], num_simulacoes: int) -> float:
+    """Calcula o fitness de um indivíduo com base em várias simulações."""
     if not individuo or num_simulacoes == 0:
         return 0.0
 
     soma_maior_tile = 0
-
     for _ in range(num_simulacoes):
-        maior_tile, _ = simular_jogo(individuo)
+        maior_tile, _ = executar_jogo(individuo)
         soma_maior_tile += maior_tile
 
     return soma_maior_tile / num_simulacoes
 
-
-def avaliar_populacao(populacao: list[list[str]], num_simulacoes: int) -> list[tuple[float, list[str]]]:
+# Avalia uma população de indivíduos e retorna fitness + indivíduo.
+def avaliar_populacao(
+    populacao: list[list[str]], num_simulacoes: int
+) -> list[tuple[float, list[str]]]:
     populacao_avaliada = []
     for individuo in populacao:
         fitness_do_individuo = fitness(individuo, num_simulacoes)
@@ -75,8 +79,11 @@ def avaliar_populacao(populacao: list[list[str]], num_simulacoes: int) -> list[t
 
     return populacao_avaliada
 
-
-def selecionar_pais(populacao_com_fitness: list[tuple[float, list[str]]], n: int) -> list[list[str]]:
+# Seleciona os N melhores indivíduos como pais (elitismo).
+def selecionar_pais(
+    populacao_com_fitness: list[tuple[float, list[str]]], n: int
+) -> list[list[str]]:
+    
     populacao_com_fitness.sort(key=lambda item: item[0], reverse=True)
     n_melhores = populacao_com_fitness[:n]
     return [individuo for _, individuo in n_melhores]
