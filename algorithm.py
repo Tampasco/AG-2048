@@ -43,7 +43,12 @@ def selecionar_pais(populacao_com_fitness: list[tuple[float, list[str]]], n: int
     return pais
 
 
-def cruzar(pai1: List[str], pai2: List[str]) -> Tuple[List[str], List[str]]:
+def cruzar(pai1: list[str], pai2: list[str]) -> tuple[list[str], list[str]]:
+    # Estratégia de Single Point Crossover
+
+    if len(pai1) != len(pai2):
+        raise ValueError("Os pais precisam ser do mesmo tamanho")
+    
     tamanho = len(pai1)
     ponto_corte = random.randint(1, tamanho - 1)
 
