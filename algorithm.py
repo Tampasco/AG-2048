@@ -56,3 +56,13 @@ def cruzar(pai1: list[str], pai2: list[str]) -> tuple[list[str], list[str]]:
     filho2 = pai2[:ponto_corte] + pai1[ponto_corte:]
 
     return filho1, filho2
+
+
+def mutar(individuo: list[str], taxa_mutacao: float) -> list[str]:
+    mutante = individuo.copy()
+
+    for i in range(len(mutante)):
+        if random.random() < taxa_mutacao:
+            mutante[i] = random.choice(valid_moves)
+    
+    return mutante
