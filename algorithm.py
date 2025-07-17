@@ -43,7 +43,7 @@ def selecionar_pais(populacao_com_fitness: list[tuple[float, list[str]]], n: int
     return pais
 
 
-def cruzar(pai1: List[str], pai2: List[str]) -> Tuple[List[str], List[str]]:
+def cruzar(pai1: list[str], pai2: list[str]) -> tuple[List[str], list[str]]:
     tamanho = len(pai1)
     ponto_corte = random.randint(1, tamanho - 1)
 
