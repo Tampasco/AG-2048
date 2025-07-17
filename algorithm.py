@@ -1,8 +1,53 @@
 import random
+import logic
+import constants as c
 from mocks import simular_jogo_mock as simular_jogo # Após a implementação real, importar o módulo correto.
 
 valid_moves = ['up', 'down', 'left', 'right']
 
+
+
+
+def simular_jogo(individuo: list[str]) -> tuple[int, int]:
+    movimentos_map = {
+        'up': logic.up,
+        'down': logic.down,
+        'left': logic.left,
+        'right': logic.right
+    }
+    
+    matriz = logic.new_game(c.GRID_LEN)
+    movimentos_validos = 0
+    maior_numero = 0
+    
+    for movimento in individuo:
+        if movimento not in movimentos_map:
+            continue
+            
+        estado_jogo = logic.game_state(matriz)
+        if estado_jogo == 'lose' or estado_jogo == 'win':
+            break
+            
+        matriz, movimento_realizado = movimentos_map[movimento](matriz)
+        
+        if movimento_realizado:
+            matriz = logic.add_two(matriz)
+            movimentos_validos += 1
+            
+            # Atualiza o maior número do jogo
+            for linha in matriz:
+                for numero in linha:
+                    if numero > maior_numero:
+                        maior_numero = numero
+
+    # Se não conseguiu fazer nenhum movimento válido, o valor do maior número será o maior número inicial
+    if maior_numero == 0:
+        for linha in matriz:
+            for numero in linha:
+                if numero > maior_numero:
+                    maior_numero = numero
+    
+    return maior_numero, movimentos_validos
 
 def generate_individual(size):
     return [random.choice(valid_moves) for _ in range(size)]
