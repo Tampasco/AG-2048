@@ -5,6 +5,11 @@ import statistics
 from mocks import simular_jogo_mock as simular_jogo # Após a implementação real, importar o módulo correto.
 
 valid_moves = ['up', 'down', 'left', 'right']
+populacoes = 3
+tamanho_pop = 10
+tamanho_individuo = 20
+taxa_mutacao = 0.1
+num_simulacoes = 5
 
 
 def generate_individual(size):
@@ -120,32 +125,39 @@ def calcular_metricas(fitness_geral: list[float]):
 
 
 def rodar_ag(populacoes: int, tamanho_pop: int, tamanho_individuo: int, taxa_mutacao: float, num_simulacoes: int) -> tuple[float, list[str]]:
-    # Configurando parametros
+    # Configurar parametros
     num_pais = max(2, tamanho_pop // 2)
     tempo_inicio = time.time()
     melhor_fitness_historico = []
     melhor_individuo_global = None
     melhor_fitness_global = float('-inf')
 
-    # Criando populacao original
+    # Criar populacao original
     populacao = generate_population(tamanho_pop, tamanho_individuo)
     ciclos = 0
 
     # Ciclo evolutivo
     while ciclos < populacoes:
 
-        # Avaliando populacao atual
+        # Avaliar populacao atual
         populacao_avaliada = avaliar_populacao(populacao, num_simulacoes)
 
         # Calcular metricas
         fitness_geral = [fitness_val for fitness_val, _ in populacao_avaliada]
-        calcular_metricas(fitness_geral)
+        metricas = calcular_metricas(fitness_geral)
+
+        # Atualizar melhor global
+        melhor_fitness = metricas["melhor_fitness"]
+        if melhor_fitness > melhor_fitness_global:
+            melhor_fitness_global = melhor_fitness
+            melhor_individuo_global = max(populacao_avaliada, key=lambda x: x[0])[1].copy()
         
         # Evoluir populacao
         if ciclos < populacoes - 1:
-            nova_populacao = gerar_nova_populacao(populacao_avaliada, tamanho_pop, taxa_mutacao, num_pais)
-            populacao = nova_populacao
-        
+            populacao = gerar_nova_populacao(populacao_avaliada, tamanho_pop, taxa_mutacao, num_pais)
         ciclos += 1
 
     return melhor_fitness_global, melhor_individuo_global if melhor_individuo_global else []
+
+
+print(rodar_ag(populacoes, tamanho_pop, tamanho_individuo, taxa_mutacao, num_simulacoes))
