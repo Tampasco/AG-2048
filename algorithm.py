@@ -41,3 +41,13 @@ def selecionar_pais(populacao_com_fitness: list[tuple[float, list[str]]], n: int
     # Extrai apenas a parte do indivíduo (item[1] da tupla) para criar a lista de pais
     pais = [individuo for fitness, individuo in n_melhores]
     return pais
+
+
+def cruzar(pai1: List[str], pai2: List[str]) -> Tuple[List[str], List[str]]:
+    tamanho = len(pai1)
+    ponto_corte = random.randint(1, tamanho - 1)
+
+    filho1 = pai1[:ponto_corte] + pai2[ponto_corte:]
+    filho2 = pai2[:ponto_corte] + pai1[ponto_corte:]
+
+    return filho1, filho2
