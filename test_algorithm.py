@@ -63,7 +63,7 @@ def avaliarFuncaoDeAvaliacaoDePopulacaoUsandoMock():
     avaliacoes_desejadas = [0.2, 0.5, 0.7]
 
     # Esperado: combinação indivíduo + valor
-    esperado = list(zip(populacao_fake, avaliacoes_desejadas))
+    esperado = list(zip(avaliacoes_desejadas,populacao_fake))
 
     with patch.object(ag, "gerar_populacao", return_value=populacao_fake), \
          patch.object(ag, "avaliar_populacao", return_value=esperado) as avaliar_mock:
@@ -81,10 +81,10 @@ def avaliarFuncaoDeAvaliacaoDePopulacaoUsandoMock():
 
 def avaliarSelecaoDePopulacaoNormal():
     populacao_avaliada = [
-        (["left"], 0.3),
-        (["right"], 0.9),
-        (["down"], 0.1),
-        (["up"], 0.8)
+        (0.3, ["left"]),
+        (0.9, ["right"]),
+        (0.1, ["down"]),
+        (0.8, ["up"])
     ]
 
     pais = ag.selecionar_pais(populacao_avaliada, 2)
@@ -99,9 +99,9 @@ def avaliarSelecaoDePopulacaoVazia():
 
 def avaliarSelecaoDePopulacaoIgual():
     populacao_avaliada = [
-        (["left"], 0.5),
-        (["right"], 0.5),
-        (["up"], 0.5)
+        (0.5,["left"]),
+        (0.5,["right"]),
+        (0.5,["up"])
     ]
 
     pais = ag.selecionar_pais(populacao_avaliada, 2)
@@ -158,6 +158,54 @@ def avaliarGeracaoDeNovaPopulacao():
     assert mock_cruzar.call_count == 1
     # Mutar deve ser chamado 2 vezes
     assert mock_mutar.call_count == 2
+
+def avaliarCalculoMetricas():
+    fitness_geral = [0.3, 0.5, 0, 0,9, 0,99]
+    fitness_vazio = []
+
+    metricas = calcular_metricas(fitness_geral)
+
+    assert metricas["melhor_fitness"] == 0.99
+    assert metricas["pior_fitness"] == 0
+
+    metricas = calcular_metricas(fitness_vazio)
+
+    assert metricas["medio_fitness"] == 0 
+    assert metricas["desvio_padrao"] == 0
+    assert metricas["mediana"] == 0
+
+def avaliarRodarAlgoritmoGenetico():
+    # Simular as chamadas das funções
+    with patch.object(ag, "generate_population") as mock_generate, \
+         patch.object(ag, "avaliar_populacao") as mock_avaliar, \
+         patch.object(ag, "calcular_metricas") as mock_metricas, \
+         patch.object(ag, "gerar_nova_populacao") as mock_gerar_nova:
+
+        # Usando mock para gerar população inicial
+        mock_generate.return_value = [["up", "down", "left"], ["down", "left", "right"]]
+        mock_avaliar.return_value = [(0.8, ["up", "down", "left"]), (0.5, ["down", "left", "right"])]
+
+        # Métricas para cada avaliação 
+        mock_metricas.return_value = {
+            "melhor_fitness": 0.8,
+            "pior_fitness": 0.5,
+            "medio_fitness": 0.8,
+            "desvio_padrao": 0.6,
+            "mediana": 0.7
+        }
+
+        mock_gerar_nova.return_value = [["up", "up", "left"],  ["down", "down", "right"]]
+
+        # Executa o AG por 3 gerações
+        resultado = ag.rodar_ag(3, 1, 3, 0.4, 1)
+
+        melhor_fitness, melhor_individuo = resultado # Resultado baseado nas simulações
+
+        assert melhor_fitness == 0.8
+        assert melhor_individuo == ["up", "down", "left"]
+        assert mock_avaliar.call_count == 3
+        assert mock_gerar_nova.call_count == 2
+
 
 
 
