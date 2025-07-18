@@ -1,13 +1,12 @@
 # Testes TDD para o algoritmo genético
 
 import random
+import algorithm as ag
 from unittest.mock import patch
-from algorithm as ag
-
 
 # Criação de Individuo de tamanho variavel
 
-def avaliarGeracaoDeIndividuo():
+def test_avaliarGeracaoDeIndividuo():
     individuo = ag.generate_individual(10)
 
     assert len(individuo) == 10
@@ -16,25 +15,24 @@ def avaliarGeracaoDeIndividuo():
 
 # Simulação do jogo feito pelo individuo gerado
 
-def avaliarSimulacaoDoJogo():
+def test_avaliarSimulacaoDoJogo():
     individuo = ag.generate_individual(10)
     maior_tile, movimentos = ag.simular_jogo(individuo)
 
     assert maior_tile <= 2048 and maior_tile >= 2
-    assert movimentos <= 10
-
-    
+    assert movimentos <= 10 
 
 # Criação de população de individuos de tamanho variavel
 
-def avaliarGeracaoDePopulacao():
+def test_avaliarGeracaoDePopulacao():
     populacao = ag.generate_population(10,10)
     populacao_sem_movimentos = ag.generate_population(10,0)
 
     assert len(populacao) == 10
-    for e in populacao:
-        assert len(e) == 10
-        assert e in ["up", "left", "right", "down"]
+    for i in range(len(populacao)):
+        assert len(populacao[i]) == 10
+        for e in populacao[i]:
+            assert e in ["up", "left", "right", "down"]
 
     for p in populacao_sem_movimentos:
         assert len(p) == 0
@@ -42,7 +40,7 @@ def avaliarGeracaoDePopulacao():
 # Funçao de aptidão com base em Monte Carlo
 # Esse teste visa verificar se os resultados estão dentro do limite
 
-def avaliarFuncaoAptidaoDentroDosLimites():
+def test_avaliarFuncaoAptidaoDentroDosLimites():
     individuo = ag.generate_individual(10)
 
     resultado = ag.fitness(individuo, 10)
@@ -50,7 +48,7 @@ def avaliarFuncaoAptidaoDentroDosLimites():
     assert resultado <= 2048 and resultado >= 0
     
 
-def avaliarFuncaoDeAvaliacaoDePopulacaoUsandoMock():
+def test_avaliarFuncaoDeAvaliacaoDePopulacaoUsandoMock():
 
     # População desejada (ação de um agente, por exemplo)
     populacao_fake = [
@@ -65,10 +63,10 @@ def avaliarFuncaoDeAvaliacaoDePopulacaoUsandoMock():
     # Esperado: combinação indivíduo + valor
     esperado = list(zip(avaliacoes_desejadas,populacao_fake))
 
-    with patch.object(ag, "gerar_populacao", return_value=populacao_fake), \
+    with patch.object(ag, "generate_population", return_value=populacao_fake), \
          patch.object(ag, "avaliar_populacao", return_value=esperado) as avaliar_mock:
 
-        populacao = ag.gerar_populacao(3, 3)  # geraria 3 indivíduos de 3 ações cada
+        populacao = ag.generate_population(3, 3)  # geraria 3 indivíduos de 3 ações cada
         resultado = ag.avaliar_populacao(populacao, 10)
 
     assert resultado == esperado
@@ -76,10 +74,9 @@ def avaliarFuncaoDeAvaliacaoDePopulacaoUsandoMock():
     avaliar_mock.assert_called_once_with(populacao_fake, 10)
 
 
-
 # Esse teste serve para avaliar como será a escolha dos melhores indiviuos(pais)
 
-def avaliarSelecaoDePopulacaoNormal():
+def test_avaliarSelecaoDePopulacaoNormal():
     populacao_avaliada = [
         (0.3, ["left"]),
         (0.9, ["right"]),
@@ -91,13 +88,13 @@ def avaliarSelecaoDePopulacaoNormal():
 
     assert pais == [["right"], ["up"]]  # melhores fitness: 0.9 e 0.8
 
-def avaliarSelecaoDePopulacaoVazia():
-    populacao_vazia = ag.gerar_populacao(0,0)
-    pais = ag.selecionar_pais(populacao, 3)
+def test_avaliarSelecaoDePopulacaoVazia():
+    populacao_vazia = ag.generate_population(0,0)
+    pais = ag.selecionar_pais(populacao_vazia, 3)
 
     assert pais == []
 
-def avaliarSelecaoDePopulacaoIgual():
+def test_avaliarSelecaoDePopulacaoIgual():
     populacao_avaliada = [
         (0.5,["left"]),
         (0.5,["right"]),
@@ -112,28 +109,28 @@ def avaliarSelecaoDePopulacaoIgual():
         assert p in [["up"], ["right"], ["left"]]
 
 #Cruzamento
-def avaliarCruzamento():
+def test_avaliarCruzamento():
     pai1 = ["up", "up", "down", "left"]
     pai2 = ["left", "right", "up", "down"]
 
-    
-    filho1, filho2 = ag.cruzar(pai1, pai2)
+    with patch("algorithm.random.randint", return_value=2):
+        filho1, filho2 = ag.cruzar(pai1, pai2)
 
     assert filho1 == ["up", "up", "up", "down"]
     assert filho2 == ["left", "right", "down", "left"]
 
-def avaliarMutacaoComProbabilidadeCerteira():
+def test_avaliarMutacaoComProbabilidadeCerteira():
     individuo = ["up", "up", "up"]
 
     # Sempre sorteia "down" para cada mutação
+    # Assumindo que a escolha do movimento novo seja com random.choice
     with patch("algorithm.random.random", return_value=0.0), \
-        #A ssumindo que a escolha do movimento novo seja com random.choice
          patch("algorithm.random.choice", return_value="down"):
             mutado = ag.mutar(individuo, 1.0)
 
     assert mutado == ["down", "down", "down"]
 
-def avaliarMutacaoComProbabilidade50porcento():
+def test_avaliarMutacaoComProbabilidade50porcento():
     individuo = ["up", "down", "left"]
 
     # Simula mutação só no primeiro e no terceiro gene
@@ -143,15 +140,16 @@ def avaliarMutacaoComProbabilidade50porcento():
 
     assert mutado == ["right", "down", "up"]
 
-def avaliarGeracaoDeNovaPopulacao():
+def test_avaliarGeracaoDeNovaPopulacao():
     pai1 = ["up", "up", "left", "down"]
     pai2 = ["down", "down", "right", "up"]
-    pais = [pai1, pai2]
+    populacao = [pai1, pai2]
+    populacao_avaliada = ag.avaliar_populacao(populacao, 10)
 
     with patch.object(ag, "cruzar", return_value=(["up", "up","right", "up"], ["down", "down","left", "down"])) as mock_cruzar, \
          patch.object(ag, "mutar", side_effect=lambda ind, _: ind) as mock_mutar:
         
-        nova_pop = ag.gerar_nova_geracao(pais, 2, 0.1)
+        nova_pop = ag.gerar_nova_populacao(populacao_avaliada, 2, 0.1,2)
 
     assert nova_pop == [["up", "up","right", "up"], ["down", "down","left", "down"]]
     # Cruamento deve ser chamado 1 vez
@@ -159,22 +157,22 @@ def avaliarGeracaoDeNovaPopulacao():
     # Mutar deve ser chamado 2 vezes
     assert mock_mutar.call_count == 2
 
-def avaliarCalculoMetricas():
-    fitness_geral = [0.3, 0.5, 0, 0,9, 0,99]
+def test_avaliarCalculoMetricas():
+    fitness_geral = [0.3, 0.5, 0, 0.9, 0.99]
     fitness_vazio = []
 
-    metricas = calcular_metricas(fitness_geral)
+    metricas = ag.calcular_metricas(fitness_geral)
 
     assert metricas["melhor_fitness"] == 0.99
     assert metricas["pior_fitness"] == 0
 
-    metricas = calcular_metricas(fitness_vazio)
+    metricas = ag.calcular_metricas(fitness_vazio)
 
     assert metricas["medio_fitness"] == 0 
     assert metricas["desvio_padrao"] == 0
     assert metricas["mediana"] == 0
 
-def avaliarRodarAlgoritmoGenetico():
+def test_avaliarRodarAlgoritmoGenetico():
     # Simular as chamadas das funções
     with patch.object(ag, "generate_population") as mock_generate, \
          patch.object(ag, "avaliar_populacao") as mock_avaliar, \
