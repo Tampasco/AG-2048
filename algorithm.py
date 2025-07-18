@@ -1,5 +1,3 @@
-"""Algoritmo genético para jogar 2048 automaticamente."""
-
 import random
 import csv
 import time
