@@ -5,11 +5,6 @@ import statistics
 from mocks import simular_jogo_mock as simular_jogo # Após a implementação real, importar o módulo correto.
 
 valid_moves = ['up', 'down', 'left', 'right']
-populacoes = 3
-tamanho_pop = 10
-tamanho_individuo = 20
-taxa_mutacao = 0.1
-num_simulacoes = 5
 
 
 def generate_individual(size):
@@ -53,10 +48,6 @@ def selecionar_pais(populacao_com_fitness: list[tuple[float, list[str]]], n: int
 
 def cruzar(pai1: list[str], pai2: list[str]) -> tuple[list[str], list[str]]:
     # Estratégia de Single Point Crossover
-
-    if len(pai1) != len(pai2):
-        raise ValueError("Os pais precisam ser do mesmo tamanho")
-    
     tamanho = len(pai1)
     ponto_corte = random.randint(1, tamanho - 1)
 
@@ -157,7 +148,4 @@ def rodar_ag(populacoes: int, tamanho_pop: int, tamanho_individuo: int, taxa_mut
             populacao = gerar_nova_populacao(populacao_avaliada, tamanho_pop, taxa_mutacao, num_pais)
         ciclos += 1
 
-    return melhor_fitness_global, melhor_individuo_global if melhor_individuo_global else []
-
-
-print(rodar_ag(populacoes, tamanho_pop, tamanho_individuo, taxa_mutacao, num_simulacoes))
+    return melhor_fitness_global, melhor_individuo_global
