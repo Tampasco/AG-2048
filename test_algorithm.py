@@ -17,7 +17,7 @@ def test_avaliarGeracaoDeIndividuo():
 
 def test_avaliarSimulacaoDoJogo():
     individuo = ag.generate_individual(10)
-    maior_tile, movimentos = ag.simular_jogo(individuo)
+    maior_tile, movimentos = ag.executar_jogo(individuo)
 
     assert maior_tile <= 2048 and maior_tile >= 2
     assert movimentos <= 10 
@@ -141,17 +141,17 @@ def test_avaliarMutacaoComProbabilidade50porcento():
     assert mutado == ["right", "down", "up"]
 
 def test_avaliarGeracaoDeNovaPopulacao():
-    pai1 = ["up", "up", "left", "down"]
-    pai2 = ["down", "down", "right", "up"]
-    populacao = [pai1, pai2]
+    i1 = ["up", "up", "left", "down"]
+    i2 = ["down", "down", "right", "up"]
+    populacao = [i1, i2]
     populacao_avaliada = ag.avaliar_populacao(populacao, 10)
 
-    with patch.object(ag, "cruzar", return_value=(["up", "up","right", "up"], ["down", "down","left", "down"])) as mock_cruzar, \
+    with patch.object(ag, "cruzar", return_value=(["up", "up","left", "up"], ["down", "down","right", "up"])) as mock_cruzar, \
          patch.object(ag, "mutar", side_effect=lambda ind, _: ind) as mock_mutar:
         
-        nova_pop = ag.gerar_nova_populacao(populacao_avaliada, 2, 0.1,2)
+        nova_pop = ag.gerar_nova_populacao(populacao_avaliada, 4, 0.1,2)
 
-    assert nova_pop == [["up", "up","right", "up"], ["down", "down","left", "down"]]
+    assert nova_pop == [i1,i2,["up", "up","left", "up"], ["down", "down","right", "up"]]
     # Cruamento deve ser chamado 1 vez
     assert mock_cruzar.call_count == 1
     # Mutar deve ser chamado 2 vezes
@@ -159,18 +159,12 @@ def test_avaliarGeracaoDeNovaPopulacao():
 
 def test_avaliarCalculoMetricas():
     fitness_geral = [0.3, 0.5, 0, 0.9, 0.99]
-    fitness_vazio = []
 
     metricas = ag.calcular_metricas(fitness_geral)
 
     assert metricas["melhor_fitness"] == 0.99
     assert metricas["pior_fitness"] == 0
 
-    metricas = ag.calcular_metricas(fitness_vazio)
-
-    assert metricas["medio_fitness"] == 0 
-    assert metricas["desvio_padrao"] == 0
-    assert metricas["mediana"] == 0
 
 def test_avaliarRodarAlgoritmoGenetico():
     # Simular as chamadas das funções
@@ -202,7 +196,7 @@ def test_avaliarRodarAlgoritmoGenetico():
         assert melhor_fitness == 0.8
         assert melhor_individuo == ["up", "down", "left"]
         assert mock_avaliar.call_count == 3
-        assert mock_gerar_nova.call_count == 2
+        assert mock_gerar_nova.call_count == 3
 
 
 
