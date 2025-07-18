@@ -1,6 +1,5 @@
-
-
 import random
+import time
 import statistics
 import logic
 import constants as c
@@ -53,29 +52,55 @@ def generate_population(population_size: int, individual_size: int) -> list[list
     return [generate_individual(individual_size) for _ in range(population_size)]
 
 
-def fitness(individuo: list[str], num_simulacoes: int) -> float:
+def fitness(individuo: list[str], num_simulacoes: int) -> dict:
     if not individuo or num_simulacoes == 0:
-        return 0.0
+        return {
+            "media_tile": 0.0,
+            "media_movimentos": 0.0,
+            "maior_tile": 0,
+            "distribuicao_tiles": {128: 0, 256: 0, 512: 0, 1024: 0, 2048: 0}
+        }
 
-    soma_maior_tile = 0
+    soma_tile = 0
+    soma_movimentos = 0
+    maior_tile_global = 0
+    distribuicao = {128: 0, 256: 0, 512: 0, 1024: 0, 2048: 0}
+
     for _ in range(num_simulacoes):
-        maior_tile, _ = executar_jogo(individuo)
-        soma_maior_tile += maior_tile
+        maior_tile, movimentos = executar_jogo(individuo)
+        soma_tile += maior_tile
+        soma_movimentos += movimentos
+        maior_tile_global = max(maior_tile_global, maior_tile)
 
-    return soma_maior_tile / num_simulacoes
+        for limite in distribuicao:
+            if maior_tile >= limite:
+                distribuicao[limite] += 1
+
+    return {
+        "media_tile": soma_tile / num_simulacoes,
+        "media_movimentos": soma_movimentos / num_simulacoes,
+        "maior_tile": maior_tile_global,
+        "distribuicao_tiles": distribuicao
+    }
+
 
 
 def avaliar_populacao(
     populacao: list[list[str]], num_simulacoes: int
-) -> list[tuple[float, list[str]]]:
-    return [(fitness(individuo, num_simulacoes), individuo) for individuo in populacao]
+) -> list[tuple[float, dict, list[str]]]:
+    return [
+        (resultado["media_tile"], resultado, individuo)
+        for individuo in populacao
+        for resultado in [fitness(individuo, num_simulacoes)]
+    ]
 
 
 def selecionar_pais(
-    populacao_com_fitness: list[tuple[float, list[str]]], n: int
+    populacao_com_fitness: list[tuple[float, dict, list[str]]], n: int
 ) -> list[list[str]]:
     populacao_com_fitness.sort(key=lambda item: item[0], reverse=True)
-    return [individuo for _, individuo in populacao_com_fitness[:n]]
+    return [individuo for _, _, individuo in populacao_com_fitness[:n]]
+
 
 
 def cruzar(pai1: list[str], pai2: list[str]) -> tuple[list[str], list[str]]:
@@ -131,25 +156,54 @@ def rodar_ag(
     taxa_mutacao: float,
     num_simulacoes: int
 ) -> tuple[float, list[str]]:
+    import time
+
     num_pais = max(2, tamanho_pop // 2)
     melhor_individuo_global = None
     melhor_fitness_global = float('-inf')
     populacao = generate_population(tamanho_pop, tamanho_individuo)
 
-    for _ in range(populacoes):
-        populacao_avaliada = avaliar_populacao(populacao, num_simulacoes)
-        fitness_geral = [fitness_val for fitness_val, _ in populacao_avaliada]
-        metricas = calcular_metricas(fitness_geral)
-        melhor_fitness = metricas["melhor_fitness"]
+    with open("log_ag_10%.txt", "w", encoding="utf-8") as log:
+        for geracao in range(populacoes):
+            inicio = time.time()
+            populacao_avaliada = avaliar_populacao(populacao, num_simulacoes)
+            fim = time.time()
 
-        if melhor_fitness > melhor_fitness_global:
-            melhor_fitness_global = melhor_fitness
-            melhor_individuo_global = max(
-                populacao_avaliada, key=lambda x: x[0]
-            )[1].copy()
+            fitness_geral = [fitness_val for fitness_val, _, _ in populacao_avaliada]
+            metricas = calcular_metricas(fitness_geral)
 
-        populacao = gerar_nova_populacao(
-            populacao_avaliada, tamanho_pop, taxa_mutacao, num_pais
-        )
+            melhor_fitness, resultado, individuo = max(populacao_avaliada, key=lambda x: x[0])
+
+            if melhor_fitness > melhor_fitness_global:
+                melhor_fitness_global = melhor_fitness
+                melhor_individuo_global = individuo.copy()
+
+            log.write(f"\n📊 Geração {geracao + 1}:\n")
+            log.write(f"- Melhor fitness: {metricas['melhor_fitness']}\n")
+            log.write(f"- Pior fitness: {metricas['pior_fitness']}\n")
+            log.write(f"- Média fitness: {metricas['medio_fitness']:.2f}\n")
+            log.write(f"- Mediana: {metricas['mediana']}\n")
+            log.write(f"- Desvio padrão: {metricas['desvio_padrao']:.2f}\n")
+            log.write(f"- Tempo de geração: {fim - inicio:.2f}s\n")
+            log.write(f"- Maior tile do melhor indivíduo: {resultado['maior_tile']}\n")
+            log.write(f"- Média de movimentos válidos: {resultado['media_movimentos']:.2f}\n")
+            log.write("- Distribuição dos maiores tiles:\n")
+            for k, v in resultado["distribuicao_tiles"].items():
+                log.write(f"  - ≥ {k}: {v}x\n")
+
+            populacao = gerar_nova_populacao(
+                populacao_avaliada, tamanho_pop, taxa_mutacao, num_pais
+            )
+
+        # Salva o melhor indivíduo encontrado
+        log.write("\n✅ Melhor indivíduo global:\n")
+        log.write(f"- Fitness: {melhor_fitness_global:.2f}\n")
+        log.write("- Movimentos:\n")
+        for movimento in melhor_individuo_global:
+            log.write(f"{movimento}\n")
 
     return melhor_fitness_global, melhor_individuo_global
+
+
+
+print(rodar_ag(50,150,500,0.10,10))
